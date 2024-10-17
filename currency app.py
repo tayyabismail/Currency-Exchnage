@@ -1,85 +1,42 @@
 import streamlit as st
 import requests
 
+# ExchangeRate-API URL with the provided API key
+api_url = "https://v6.exchangerate-api.com/v6/d10cdf4e0852ad5e6a789660/latest/USD"
+
 # Function to get exchange rates
-def get_exchange_rates(base_currency='USD'):
-    url = f'https://api.exchangerate-api.com/v4/latest/{base_currency}'
-    response = requests.get(url)
+def get_exchange_rates(api_url):
+    response = requests.get(api_url)
     data = response.json()
-    
     if response.status_code == 200:
-        return data['rates']
+        return data['conversion_rates']
     else:
-        st.error("Error fetching data")
+        st.error("Error fetching data from the API. Please check the API key or URL.")
         return None
 
-# Function to convert currency
-def convert_currency(amount, from_currency, to_currency, rates):
-    if from_currency == 'USD':
-        converted_amount = amount * rates[to_currency]
-    else:
-        # Convert from another currency to USD first
-        amount_in_usd = amount / rates[from_currency]
-        converted_amount = amount_in_usd * rates[to_currency]
-    
-    return converted_amount
+# Fetch exchange rates
+rates = get_exchange_rates(api_url)
 
-# Streamlit App
-def main():
-    st.title("Currency Converter")
-    
-    # Get the exchange rates
-    rates = get_exchange_rates()
+# Streamlit app interface
+st.title("Currency Exchange Calculator")
 
-    if rates is None:
-        return
+if rates:
+    currencies = list(rates.keys())
 
-    # Currency options
-    currencies = {
-        'USD': 'United States Dollar',
-        'EUR': 'Euro',
-        'JPY': 'Japanese Yen',
-        'GBP': 'British Pound Sterling',
-        'AUD': 'Australian Dollar',
-        'CAD': 'Canadian Dollar',
-        'CHF': 'Swiss Franc',
-        'CNY': 'Chinese Yuan Renminbi',
-        'SEK': 'Swedish Krona',
-        'NZD': 'New Zealand Dollar',
-        'SGD': 'Singapore Dollar',
-        'HKD': 'Hong Kong Dollar',
-        'NOK': 'Norwegian Krone',
-        'KRW': 'South Korean Won',
-        'INR': 'Indian Rupee',
-        'BRL': 'Brazilian Real',
-        'MXN': 'Mexican Peso',
-        'ZAR': 'South African Rand',
-        'TRY': 'Turkish Lira',
-        'RUB': 'Russian Ruble',
-        'PLN': 'Polish Zloty',
-        'DKK': 'Danish Krone',
-        'THB': 'Thai Baht',
-        'IDR': 'Indonesian Rupiah',
-        'PHP': 'Philippine Peso',
-        'MYR': 'Malaysian Ringgit',
-        'HUF': 'Hungarian Forint',
-        'CZK': 'Czech Koruna',
-        'CLP': 'Chilean Peso',
-        'PKR': 'Pakistani Rupee',
-        'BDT': 'Bangladeshi Taka'
-    }
+    # User inputs for currency selection and amount
+    from_currency = st.selectbox("From Currency:", currencies)
+    to_currency = st.selectbox("To Currency:", currencies)
+    amount = st.number_input("Amount:", min_value=0.0, value=1.0, step=0.01)
 
-    # User inputs
-    from_currency = st.selectbox("Select currency to convert from", list(currencies.keys()))
-    to_currency = st.selectbox("Select currency to convert to", list(currencies.keys()))
-    amount = st.number_input("Enter the amount to convert", min_value=0.0, step=0.01)
-
+    # Perform currency conversion when button is clicked
     if st.button("Convert"):
-        if from_currency in rates and to_currency in rates:
-            converted_amount = convert_currency(amount, from_currency, to_currency, rates)
+        if from_currency and to_currency:
+            # Calculate the conversion rate
+            conversion_rate = rates[to_currency] / rates[from_currency]
+            converted_amount = amount * conversion_rate
+            # Display the converted amount
             st.success(f"{amount} {from_currency} is equal to {converted_amount:.2f} {to_currency}")
         else:
-            st.error("Invalid currency code entered.")
-
-if _name_ == "_main_":
-    main()
+            st.error("Please select both currencies for conversion.")
+else:
+    st.error("Could not fetch exchange rates. Please try again later.")
